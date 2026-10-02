@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en" translate="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="google" content="notranslate">
+<title>C Programming — Hands-on Exam</title>
+<style>
+  :root {
+    --bg: #e8ecf1;
+    --panel: #f7f9fb;
+    --ink: #121c28;
+    --muted: #5a6877;
+    --line: #cdd5de;
+    --accent: #1b5fc1;
+    --accent-ink: #ffffff;
+    --danger: #b3261e;
+    --ok: #17703a;
+    --field: #fcfdff;
+    --mono: Consolas, "Cascadia Code", "Courier New", ui-monospace, Menlo, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0d141c; --panel: #151e29; --ink: #e6edf5; --muted: #93a2b3; --line: #263444;
+      --accent: #5b9bff; --accent-ink: #07101c; --danger: #ff7b72; --ok: #4cc77d; --field: #101821;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0d141c; --panel: #151e29; --ink: #e6edf5; --muted: #93a2b3; --line: #263444;
+    --accent: #5b9bff; --accent-ink: #07101c; --danger: #ff7b72; --ok: #4cc77d; --field: #101821;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font-family: var(--sans); font-size: 15px; line-height: 1.5;
+    display: flex; flex-direction: column; overflow: hidden;
+    -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+  }
+
+  /* ---------- top bar ---------- */
+  .bar { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding: 8px 18px; background: var(--panel); border-bottom: 1px solid var(--line); }
+  .bar h1 { font-size: 16px; margin: 0; font-weight: 650; }
+  .who { color: var(--muted); font-size: 13px; }
+  .spacer { flex: 1; }
+  .viol { font-size: 13px; color: var(--muted); }
+  .viol b { color: var(--ink); font-variant-numeric: tabular-nums; }
+  .viol.hot b { color: var(--danger); }
+  .clock { font-family: var(--mono); font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; min-width: 4.6ch; text-align: right; }
+  .clock.stopped { color: var(--ok); }
+
+  /* ---------- editor (Notepad++ default look) ---------- */
+  .editor-wrap { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .editor { flex: 1; min-height: 0; display: grid; grid-template-columns: auto 1fr; background: #ffffff; }
+  .gutter {
+    margin: 0; padding: 10px 8px 10px 10px; overflow: hidden; min-width: 3.4ch;
+    background: #e4e4e4; color: #808080; border-right: 1px solid #c8c8c8;
+    font-family: var(--mono); font-size: 15px; line-height: 22px; text-align: right; white-space: pre;
+    font-variant-numeric: tabular-nums;
+  }
+  .gutter-in { padding-bottom: 60px; }
+  .codebox { position: relative; min-width: 0; min-height: 0; background: #ffffff; }
+  #hl, #code {
+    position: absolute; inset: 0; margin: 0; border: 0;
+    padding: 10px 14px; font-family: var(--mono); font-size: 15px; line-height: 22px;
+    white-space: pre; tab-size: 4; letter-spacing: 0; word-spacing: 0;
+    font-variant-ligatures: none; font-kerning: none;
+  }
+  #hl { overflow: hidden; pointer-events: none; color: #000000; z-index: 0; }
+  #hlc { display: inline-block; min-width: 100%; padding-right: 60px; padding-bottom: 60px; }
+  #code {
+    z-index: 1; width: 100%; height: 100%; resize: none; outline: none; overflow: auto;
+    background: transparent; color: transparent; caret-color: #000000;
+    -webkit-user-select: text; user-select: text;
+  }
+  #code::selection { background: #c0d8ff; color: transparent; }
+  #code::placeholder { color: #a7a7a7; }
+  #code[readonly] { opacity: .8; }
+  /* Notepad++ default C colours */
+  .kw { color: #0000ff; font-weight: 700; }   /* if else for while return ... */
+  .ty { color: #8000ff; font-weight: 700; }   /* int char float void ... */
+  .pp { color: #804000; }                    /* #include #define */
+  .cm { color: #008000; }                    /* comments */
+  .st { color: #808080; }                    /* "strings" 'c' */
+  .nu { color: #ff8000; }                    /* numbers */
+  .op { color: #000080; font-weight: 700; }  /* operators and brackets */
+
+  /* ---------- run panel ---------- */
+  .runpanel { height: 30%; min-height: 150px; max-height: 45%; display: grid; grid-template-columns: minmax(180px, 32%) 1fr; border-top: 1px solid var(--line); background: var(--panel); }
+  @media (max-width: 700px) { .runpanel { grid-template-columns: 1fr 1fr; } }
+  .pane { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+  .pane + .pane { border-left: 1px solid var(--line); }
+  .pane h2 { font-size: 12px; margin: 0; padding: 6px 12px; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--line); }
+  #stdin, #out {
+    flex: 1; min-height: 0; margin: 0; padding: 8px 12px; overflow: auto; border: 0; outline: none; resize: none;
+    background: var(--field); color: var(--ink); font-family: var(--mono); font-size: 14px; line-height: 20px;
+    -webkit-user-select: text; user-select: text;
+  }
+  #out { white-space: pre-wrap; word-break: break-word; }
+  #out .e { color: var(--danger); }
+  #out .m { color: var(--muted); }
+
+  .foot { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 8px 18px; background: var(--panel); border-top: 1px solid var(--line); }
+  .foot .hint { color: var(--muted); font-size: 13px; }
+  .foot .status { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+  button { font: inherit; font-weight: 600; cursor: pointer; padding: 8px 18px; border-radius: 6px; border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink); }
+  button:hover { filter: brightness(1.08); }
+  button:focus-visible, input:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 55%, transparent); outline-offset: 2px; }
+  button.confirm { background: var(--danger); border-color: var(--danger); color: #fff; }
+  button.ghost { background: transparent; color: var(--accent); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+
+  /* ---------- gate ---------- */
+  .gate { position: fixed; inset: 0; z-index: 50; display: none; align-items: center; justify-content: center; padding: 20px; background: var(--bg); }
+  .gate.show { display: flex; }
+  .card { width: min(480px, 100%); background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 26px; max-height: 100%; overflow: auto; }
+  .card h2 { margin: 0 0 6px; font-size: 20px; }
+  .card p { margin: 0 0 14px; color: var(--muted); }
+  .card ul { margin: 0 0 18px; padding-left: 20px; }
+  .card li { margin-bottom: 4px; }
+  .card label { display: block; font-size: 13px; font-weight: 600; margin: 12px 0 4px; }
+  .card input { -webkit-user-select: text; user-select: text; width: 100%; padding: 9px 11px; font: inherit; color: var(--ink); background: var(--field); border: 1px solid var(--line); border-radius: 6px; }
+  .card .row { margin-top: 20px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .alert { padding: 10px 12px; border-radius: 6px; margin-bottom: 14px; border: 1px solid var(--danger); color: var(--danger); font-weight: 600; }
+  .err { color: var(--danger); font-size: 13px; min-height: 18px; margin-top: 8px; }
+  .big { font-family: var(--mono); font-size: 30px; font-weight: 700; margin: 4px 0 14px; color: var(--ok); }
+
+  .toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 9px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 60; }
+  .toast.show { opacity: 1; }
+
+  @media print { body { display: none !important; } }
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <h1 id="title">C Programming — Hands-on Exam</h1>
+  <span class="who" id="who"></span>
+  <span class="spacer"></span>
+  <span class="viol" id="viol">Violations: <b id="violN">0</b></span>
+  <span class="clock" id="clock">00:00</span>
+</header>
+
+<main class="editor-wrap">
+  <div class="editor">
+    <pre class="gutter" id="gutter" aria-hidden="true"><div class="gutter-in" id="gutterIn">1</div></pre>
+    <div class="codebox">
+      <pre id="hl" aria-hidden="true"><div id="hlc"></div></pre>
+      <textarea id="code" wrap="off" disabled
+        spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off" translate="no"
+        data-gramm="false" data-gramm_editor="false" data-enable-grammarly="false"
+        data-lpignore="true" data-1p-ignore="true" data-form-type="other"
+        aria-label="C code editor"
+        placeholder="#include &lt;stdio.h&gt;&#10;&#10;int main() {&#10;    return 0;&#10;}"></textarea>
+    </div>
+  </div>
+
+  <div class="runpanel">
+    <div class="pane">
+      <h2>Input (stdin) — one value per line or space separated</h2>
+      <textarea id="stdin" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off" data-gramm="false" aria-label="Program input"></textarea>
+    </div>
+    <div class="pane">
+      <h2>Output</h2>
+      <pre id="out" aria-live="polite"><span class="m">Press Run to compile and execute your program.</span></pre>
+    </div>
+  </div>
+
+  <div class="foot">
+    <button id="runBtn" class="ghost" disabled>Run ▶</button>
+    <button id="copyBtn" disabled>Copy &amp; finish</button>
+    <span class="hint">Copy &amp; finish stops the timer and copies your code.</span>
+    <span class="spacer"></span>
+    <span class="status" id="status">Ln 1, Col 1</span>
+  </div>
+</main>
+
+<div class="gate show" id="gate" role="dialog" aria-modal="true">
+  <div class="card" id="gateCard"></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================================================
+   CONFIG — edit before the exam
+   ========================================================= */
+const CONFIG = {
+  title: "C Programming — Hands-on Exam",
+  resetCode: "reset-1234",                 // open  page.html#reset-1234  to clear a saved session on a PC
+  runApi: "https://ce.judge0.com",         // free Judge0 CE (real GCC). Point to your own server for a lab without internet
+  languageId: 50,                          // 50 = C (GCC) in Judge0
+  runApiToken: ""                          // optional X-Auth-Token if your server needs one
+};
+
+/* =========================================================
+   State: localStorage keeps start time + counters (the code is NEVER stored)
+   ========================================================= */
+const KEY = "cexam-v2";
+const $ = id => document.getElementById(id);
+const code = $("code"), gate = $("gate"), card = $("gateCard");
+
+function loadState() { try { return JSON.parse(localStorage.getItem(KEY)); } catch (e) { return null; } }
+function saveState() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+
+if (location.hash === "#" + CONFIG.resetCode) {
+  try { localStorage.removeItem(KEY); } catch (e) {}
+  history.replaceState(null, "", location.pathname + location.search);
+}
+let S = loadState() || { started: false };
+
+let active = false, armedAt = 0, allowCopy = false, timerId = null;
+let prevValue = "", finalText = "", fsEntered = false, internalEdit = false, running = false;
+
+$("title").textContent = CONFIG.title;
+document.title = CONFIG.title;
+
+/* =========================================================
+   Gate screens
+   ========================================================= */
+function showGate(html) { card.innerHTML = html; gate.classList.add("show"); }
+function hideGate() { gate.classList.remove("show"); }
+
+function startScreen() {
+  showGate(`
+    <h2>${esc(CONFIG.title)}</h2>
+    <p>The timer counts up from 00:00 once you start.</p>
+    <ul>
+      <li>Copy, cut, paste, drag-and-drop and right-click are disabled.</li>
+      <li>Leaving this tab or window, or exiting full screen, wipes your code and reloads the page. The timer keeps running.</li>
+      <li>Use <b>Run</b> to compile and test your program.</li>
+      <li>When finished, press <b>Copy &amp; finish</b>. This stops the timer and copies your code for your teacher.</li>
+    </ul>
+    <label for="sName">Full name</label>
+    <input id="sName" type="text" autocomplete="off" spellcheck="false">
+    <label for="sId">Student ID</label>
+    <input id="sId" type="text" autocomplete="off" spellcheck="false">
+    <div class="err" id="gErr"></div>
+    <div class="row"><button id="goBtn">Start exam</button></div>`);
+  $("goBtn").onclick = () => {
+    const n = $("sName").value.trim(), i = $("sId").value.trim();
+    if (!n || !i) { $("gErr").textContent = "Enter your name and student ID."; return; }
+    S = { started: true, name: n, id: i, start: Date.now(), violations: 0, pastes: 0, runs: 0, done: false, reason: "" };
+    saveState();
+    arm();
+  };
+}
+
+function resumeScreen() {
+  showGate(`
+    <div class="alert">Violation detected${S.reason ? ": " + esc(S.reason) : ""}</div>
+    <h2>Your code was cleared</h2>
+    <p>The timer did not stop. Violations so far: <b>${S.violations}</b>. Click resume to continue in full screen.</p>
+    <div class="row"><button id="goBtn">Resume</button></div>`);
+  $("goBtn").onclick = arm;
+}
+
+function doneScreen(copied) {
+  showGate(`
+    <h2>Exam finished</h2>
+    <p>${copied === null ? "This exam was already submitted on this computer." : copied ? "Your code is copied to the clipboard." : "Copy failed in this browser. Use the button below."}</p>
+    <div class="big">${fmt(S.elapsed || 0)}</div>
+    <p>Time taken. Violations: ${S.violations || 0}. Blocked paste attempts: ${S.pastes || 0}. Runs: ${S.runs || 0}.</p>
+    ${finalText ? `<div class="row"><button id="againBtn" class="ghost">Copy again</button></div>` : `<p>Show this screen to your teacher.</p>`}`);
+  if (finalText) $("againBtn").onclick = async () => { const ok = await doCopy(finalText); toast(ok ? "Copied" : "Copy failed"); };
+}
+
+/* =========================================================
+   Arm / violation
+   ========================================================= */
+function arm() {
+  hideGate();
+  $("who").textContent = `${S.name} · ${S.id}`;
+  updateViol();
+  code.disabled = false; code.readOnly = false; code.value = ""; prevValue = "";
+  $("copyBtn").disabled = false; $("runBtn").disabled = false;
+  refreshEditor();
+  try {
+    const p = document.documentElement.requestFullscreen && document.documentElement.requestFullscreen();
+    if (p && p.then) p.then(() => { fsEntered = true; }).catch(() => {});
+  } catch (e) {}
+  armedAt = Date.now() + 2500;               // grace period while full screen settles
+  active = true;
+  startTimer();
+  setTimeout(() => { window.focus(); code.focus(); }, 50);
+  setTimeout(() => { if (active && !code.readOnly && document.activeElement !== code) code.focus(); }, 1200);
+}
+
+function violation(reason) {
+  if (!active || Date.now() < armedAt) return;
+  active = false;
+  S.violations = (S.violations || 0) + 1;
+  S.reason = reason;
+  saveState();
+  code.value = ""; $("stdin").value = "";
+  document.body.style.visibility = "hidden";
+  location.reload();
+}
+
+document.addEventListener("visibilitychange", () => { if (document.hidden) violation("tab hidden"); });
+/* a blur only counts if the page is still unfocused shortly after (ignores the transient blur when full screen starts) */
+let blurT = null;
+window.addEventListener("blur", () => {
+  if (!active) return;
+  clearTimeout(blurT);
+  blurT = setTimeout(() => { if (!document.hasFocus()) violation("clicked outside the page"); }, 250);
+});
+window.addEventListener("focus", () => clearTimeout(blurT));
+document.addEventListener("fullscreenchange", () => {
+  if (document.fullscreenElement) fsEntered = true;
+  else if (fsEntered) violation("exited full screen");
+});
+window.addEventListener("pagehide", () => { if (active) code.value = ""; });
+
+/* =========================================================
+   Timer (counts up)
+   ========================================================= */
+function startTimer() { clearInterval(timerId); tick(); timerId = setInterval(tick, 250); }
+function tick() { $("clock").textContent = fmt(Math.floor((Date.now() - S.start) / 1000)); }
+function fmt(sec) {
+  sec = Math.max(0, Math.round(sec));
+  const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
+  const p = n => String(n).padStart(2, "0");
+  return (h ? p(h) + ":" : "") + p(m) + ":" + p(s);
+}
+function updateViol() {
+  $("violN").textContent = S.violations || 0;
+  $("viol").classList.toggle("hot", (S.violations || 0) > 0);
+}
+
+/* =========================================================
+   Copy & finish
+   ========================================================= */
+let confirmTimer = null;
+$("copyBtn").onclick = async () => {
+  const btn = $("copyBtn");
+  if (!btn.classList.contains("confirm")) {
+    if (!code.value.trim()) { toast("Nothing to copy yet"); return; }
+    btn.classList.add("confirm");
+    btn.textContent = "Click again to confirm";
+    clearTimeout(confirmTimer);
+    confirmTimer = setTimeout(() => { btn.classList.remove("confirm"); btn.textContent = "Copy & finish"; }, 4000);
+    return;
+  }
+  clearTimeout(confirmTimer);
+  clearInterval(timerId);
+  active = false;
+  S.done = true;
+  S.elapsed = Math.floor((Date.now() - S.start) / 1000);
+  saveState();
+
+  const header =
+`/*
+ * Name: ${S.name}
+ * ID: ${S.id}
+ * Time taken: ${fmt(S.elapsed)}
+ * Violations: ${S.violations || 0}
+ * Blocked paste attempts: ${S.pastes || 0}
+ * Runs: ${S.runs || 0}
+ * Submitted: ${new Date().toLocaleString()}
+ */
+
+`;
+  finalText = header + code.value.replace(/\r\n/g, "\n");
+  const ok = await doCopy(finalText);
+
+  code.readOnly = true;
+  btn.disabled = true; $("runBtn").disabled = true;
+  btn.classList.remove("confirm"); btn.textContent = "Finished";
+  const c = $("clock"); c.textContent = fmt(S.elapsed); c.className = "clock stopped";
+  doneScreen(ok);
+};
+
+async function doCopy(text) {
+  allowCopy = true;
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text);
+      allowCopy = false; return true;
+    }
+  } catch (e) {}
+  try {
+    const t = document.createElement("textarea");
+    t.value = text; t.style.position = "fixed"; t.style.opacity = "0";
+    document.body.appendChild(t); t.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(t);
+    allowCopy = false; return ok;
+  } catch (e) { allowCopy = false; return false; }
+}
+
+/* =========================================================
+   Run (compile + execute through Judge0 / GCC)
+   ========================================================= */
+const b64e = s => btoa(unescape(encodeURIComponent(s)));
+const b64d = s => { try { return decodeURIComponent(escape(atob(s || ""))); } catch (e) { return ""; } };
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+function showOut(parts) {
+  const o = $("out"); o.textContent = "";
+  parts.forEach(([cls, txt]) => { const s = document.createElement("span"); if (cls) s.className = cls; s.textContent = txt; o.appendChild(s); });
+}
+
+$("runBtn").onclick = async () => {
+  if (running || !active) return;
+  if (!code.value.trim()) { toast("Write some code first"); return; }
+  running = true; $("runBtn").disabled = true; $("runBtn").textContent = "Running…";
+  S.runs = (S.runs || 0) + 1; saveState();
+  showOut([["m", "Compiling and running…"]]);
+  const hdr = { "Content-Type": "application/json" };
+  if (CONFIG.runApiToken) hdr["X-Auth-Token"] = CONFIG.runApiToken;
+  try {
+    const sub = await fetch(CONFIG.runApi + "/submissions?base64_encoded=true&wait=false", {
+      method: "POST", headers: hdr,
+      body: JSON.stringify({ language_id: CONFIG.languageId, source_code: b64e(code.value), stdin: b64e($("stdin").value) })
+    });
+    if (!sub.ok) throw new Error("Server answered " + sub.status);
+    const { token } = await sub.json();
+    let r = null;
+    for (let i = 0; i < 40; i++) {
+      await sleep(i < 3 ? 600 : 1000);
+      const g = await fetch(CONFIG.runApi + "/submissions/" + token + "?base64_encoded=true", { headers: hdr });
+      if (!g.ok) throw new Error("Server answered " + g.status);
+      r = await g.json();
+      if (r.status && r.status.id > 2) break;      // 1 = queue, 2 = processing
+    }
+    if (!r || !r.status || r.status.id <= 2) throw new Error("Timed out waiting for the compiler");
+    const out = b64d(r.stdout), err = b64d(r.stderr), comp = b64d(r.compile_output), msg = b64d(r.message);
+    const parts = [];
+    if (comp) parts.push(["e", comp + "\n"]);
+    if (out) parts.push(["", out + (out.endsWith("\n") ? "" : "\n")]);
+    if (err) parts.push(["e", err + "\n"]);
+    if (msg) parts.push(["e", msg + "\n"]);
+    const ok = r.status.id === 3;
+    parts.push([ok ? "m" : "e", `\n[${r.status.description}]${r.time ? "  " + r.time + " s" : ""}`]);
+    showOut(parts);
+  } catch (e) {
+    showOut([["e", "Could not reach the compiler.\n" + e.message + "\nCheck the internet connection or the runApi setting."]]);
+  }
+  running = false; $("runBtn").disabled = !active; $("runBtn").textContent = "Run ▶";
+};
+
+/* =========================================================
+   Anti copy-paste
+   ========================================================= */
+function blocked(e) { if (allowCopy) return; e.preventDefault(); e.stopPropagation(); }
+["copy", "cut", "paste", "drop", "dragstart", "dragover", "contextmenu", "selectstart"].forEach(ev => {
+  document.addEventListener(ev, e => {
+    if (ev === "selectstart") {
+      const el = e.target && (e.target.nodeType === 1 ? e.target : e.target.parentElement);
+      if (el && (el.id === "code" || el.id === "stdin" || el.id === "out" || el.tagName === "INPUT" || (el.closest && el.closest("#out")))) return;
+    }
+    if (ev === "paste" || ev === "drop") countPaste();
+    blocked(e);
+  }, true);
+});
+code.addEventListener("beforeinput", e => {
+  if (/paste|drop|yank/i.test(e.inputType || "")) { e.preventDefault(); countPaste(); }
+});
+
+let lastPasteToast = 0;
+function countPaste() {
+  if (!active) return;
+  S.pastes = (S.pastes || 0) + 1; saveState();
+  if (Date.now() - lastPasteToast > 1500) { toast("Paste is disabled"); lastPasteToast = Date.now(); }
+}
+
+document.addEventListener("keydown", e => {
+  const k = (e.key || "").toLowerCase();
+  const mod = (e.ctrlKey || e.metaKey) && !e.altKey;   // AltGr = Ctrl+Alt on many layouts: allow typing
+  const inGate = gate.classList.contains("show");
+  const bad =
+    (mod && ["c", "x", "v", "s", "p", "u", "g", "f"].includes(k)) ||
+    (mod && e.shiftKey && ["v", "i", "j", "c", "k"].includes(k)) ||
+    (e.shiftKey && k === "insert") || (mod && k === "insert") ||
+    k === "f12" || (active && k === "f5") || (active && mod && k === "r") || k === "printscreen";
+  if (bad) { e.preventDefault(); e.stopPropagation(); if (active && !inGate && k === "v") countPaste(); }
+}, true);
+
+/* big text jumps that bypass paste events (autofill, extensions, voice, assistants) */
+code.addEventListener("input", e => {
+  if (!internalEdit && code.value.length - prevValue.length > 12 && !/insertLineBreak/.test(e.inputType || "")) {
+    code.value = prevValue;
+    countPaste(); toast("Large insertion blocked");
+    refreshEditor(); return;
+  }
+  prevValue = code.value;
+  refreshEditor();
+});
+
+/* =========================================================
+   Editor: tab, auto-indent, Notepad++ colours, gutter
+   ========================================================= */
+function insertAt(text) {
+  internalEdit = true;
+  code.focus();
+  let ok = false;
+  try { ok = document.execCommand("insertText", false, text); } catch (e) {}
+  if (!ok) { code.setRangeText(text, code.selectionStart, code.selectionEnd, "end"); }
+  internalEdit = false;
+  prevValue = code.value;
+  refreshEditor();
+}
+code.addEventListener("keydown", e => {
+  if (e.key === "Tab") { e.preventDefault(); insertAt("    "); return; }
+  if (e.key === "Enter") {
+    e.preventDefault();
+    const v = code.value, s = code.selectionStart;
+    const lineStart = v.lastIndexOf("\n", s - 1) + 1;
+    const indent = (v.slice(lineStart, s).match(/^[ \t]*/) || [""])[0];
+    const extra = v.slice(0, s).trimEnd().endsWith("{") ? "    " : "";
+    insertAt("\n" + indent + extra);
+  }
+});
+
+const KEYWORDS = new Set("if else for while do switch case default break continue return goto sizeof typedef struct union enum static extern const volatile register inline auto".split(" "));
+const TYPES = new Set("void char short int long float double signed unsigned size_t FILE bool".split(" "));
+const TOKEN = /(\/\/[^\n]*|\/\*[\s\S]*?(?:\*\/|$))|("(?:\\.|[^"\\\n])*"?|'(?:\\.|[^'\\\n])*'?)|(^[ \t]*#[^\n]*)|(\b\d[\w.]*)|([A-Za-z_]\w*)|([+\-*\/%=<>!&|^~?:.{}()\[\];,]+)/gm;
+
+function highlight(src) {
+  let out = "", last = 0, m;
+  TOKEN.lastIndex = 0;
+  while ((m = TOKEN.exec(src)) !== null) {
+    if (m.index > last) out += esc(src.slice(last, m.index));
+    const t = m[0];
+    let cls = "";
+    if (m[1]) cls = "cm";
+    else if (m[2]) cls = "st";
+    else if (m[3]) cls = "pp";
+    else if (m[4]) cls = "nu";
+    else if (m[5]) cls = KEYWORDS.has(t) ? "kw" : TYPES.has(t) ? "ty" : "";
+    else if (m[6]) cls = "op";
+    out += cls ? `<span class="${cls}">${esc(t)}</span>` : esc(t);
+    last = m.index + t.length;
+    if (t.length === 0) TOKEN.lastIndex++;
+  }
+  return out + esc(src.slice(last));
+}
+
+function refreshEditor() {
+  $("hlc").innerHTML = highlight(code.value) + "\n ";
+  const n = code.value.split("\n").length;
+  let nums = ""; for (let i = 1; i <= n; i++) nums += i + (i < n ? "\n" : "");
+  $("gutterIn").textContent = nums;
+  syncScroll();
+  updateStatus();
+}
+function syncScroll() {
+  $("hl").scrollTop = code.scrollTop; $("hl").scrollLeft = code.scrollLeft;
+  $("gutter").scrollTop = code.scrollTop;
+}
+function updateStatus() {
+  const pos = code.selectionStart, before = code.value.slice(0, pos).split("\n");
+  $("status").textContent = `Ln ${before.length}, Col ${before[before.length - 1].length + 1}`;
+}
+code.addEventListener("scroll", syncScroll);
+document.querySelector(".editor").addEventListener("mousedown", e => {
+  if (active && !code.readOnly && e.target !== code) { e.preventDefault(); code.focus(); }
+});
+["keyup", "click", "select"].forEach(ev => code.addEventListener(ev, updateStatus));
+
+/* =========================================================
+   Utils
+   ========================================================= */
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+let toastT;
+function toast(msg) {
+  const t = $("toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("show"), 1800);
+}
+
+/* =========================================================
+   Boot
+   ========================================================= */
+(function boot() {
+  refreshEditor();
+  if (!S.started) { startScreen(); return; }
+  $("who").textContent = `${S.name} · ${S.id}`;
+  updateViol();
+  if (S.done) {
+    const c = $("clock"); c.textContent = fmt(S.elapsed || 0); c.className = "clock stopped";
+    doneScreen(null);
+    return;
+  }
+  tick();
+  resumeScreen();
+})();
+</script>
+</body>
+</html>
